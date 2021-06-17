@@ -218,4 +218,4 @@ def prices(mango_group):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.environ.get('SERVER_PORT'))
+    app.run(host='0.0.0.0', port=int(os.environ.get('SERVER_PORT')))
