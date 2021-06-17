@@ -75,41 +75,49 @@ def withdraws(margin_account):
 @app.route('/stats/deposits/<margin_account>')
 def deposits(margin_account):
 
-    db = get_pg_db()
-    cur = db.cursor()
+    print('hello')
+    print(os.environ.get('DATABASE_URL'))
 
-    limit = request.args.get('limit')
-    offset = request.args.get('offset')
-    if limit is None:
-        limit = 10_000 # default limit
-        offset = 0
-    else:
-        if offset is None:
+    try:
+        db = get_pg_db()
+        cur = db.cursor()
+
+        limit = request.args.get('limit')
+        offset = request.args.get('offset')
+        if limit is None:
+            limit = 10_000 # default limit
             offset = 0
+        else:
+            if offset is None:
+                offset = 0
 
-    # margin_account = 'HmrkFSrqnECzFgENsiAsCQ8TzCfCyDz8oUuMtZzmSaAj'
+        # margin_account = 'HmrkFSrqnECzFgENsiAsCQ8TzCfCyDz8oUuMtZzmSaAj'
 
-    sql = """
-    select array_to_json(array_agg(row_to_json(d))) from
-    (
-    select 
-    dw.margin_account, dw.signature, dw.owner, dw.symbol, dw.quantity, dw.usd_equivalent, dw.block_datetime, dw.mango_group 
-    from deposit_withdraw dw
-    where 
-    dw.margin_account = %(margin_account)s 
-    and dw.side = 'Deposit'
-    order by dw.block_datetime desc
-    limit %(limit)s offset %(offset)s
-    ) d
-    """
+        sql = """
+        select array_to_json(array_agg(row_to_json(d))) from
+        (
+        select 
+        dw.margin_account, dw.signature, dw.owner, dw.symbol, dw.quantity, dw.usd_equivalent, dw.block_datetime, dw.mango_group 
+        from deposit_withdraw dw
+        where 
+        dw.margin_account = %(margin_account)s 
+        and dw.side = 'Deposit'
+        order by dw.block_datetime desc
+        limit %(limit)s offset %(offset)s
+        ) d
+        """
 
-    cur.execute(sql, {'margin_account': margin_account, 'limit': limit, 'offset': offset})
-    data = cur.fetchone()[0]
+        cur.execute(sql, {'margin_account': margin_account, 'limit': limit, 'offset': offset})
+        data = cur.fetchone()[0]
 
-    if data is None:
-        return jsonify([])
-    else:
-        return jsonify(data)
+
+        if data is None:
+            return jsonify([])
+        else:
+            return jsonify(data)
+
+    except Exception as e:
+        print(e)
 
 
 @app.route('/stats/liquidations/<margin_account>')
