@@ -1,5 +1,4 @@
 from flask import Flask, g, jsonify, request
-# from flask_cors import CORS
 import os
 import psycopg2
 
@@ -13,8 +12,9 @@ def create_app(debug=False):
 
     return app
 
+
 app = create_app()
-# cors = CORS(app)
+
 
 def connect_pg_db():
     """Connects to the specific database."""
@@ -23,6 +23,7 @@ def connect_pg_db():
 
     return conn
 
+
 def get_pg_db():
     """Opens a new database connection if there is none yet for the
     current application context.
@@ -30,6 +31,7 @@ def get_pg_db():
     if not hasattr(g, 'pg_db'):
         g.pg_db = connect_pg_db()
     return g.pg_db
+
 
 @app.route('/stats/withdraws/<margin_account>')
 def withdraws(margin_account):
@@ -69,6 +71,7 @@ def withdraws(margin_account):
     else:
         return jsonify(data)
 
+
 @app.route('/stats/deposits/<margin_account>')
 def deposits(margin_account):
 
@@ -107,7 +110,8 @@ def deposits(margin_account):
         return jsonify([])
     else:
         return jsonify(data)
-    
+
+
 @app.route('/stats/liquidations/<margin_account>')
 def liquidations(margin_account):
 
@@ -152,6 +156,7 @@ def liquidations(margin_account):
         return jsonify([])
     else:
         return jsonify(data)
+
 
 @app.route('/stats/prices/<mango_group>')
 def prices(mango_group):
@@ -217,5 +222,11 @@ def prices(mango_group):
         return jsonify(data)
 
 
+@app.route('/')
+def index():
+    return "<h1>Welcome to mango transaction stats</h1>"
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('SERVER_PORT')))
+
