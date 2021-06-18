@@ -1,6 +1,7 @@
 from flask import Flask, g, jsonify, request
 import os
 import psycopg2
+from flask_cors import CORS
 
 
 def create_app(debug=False):
@@ -14,6 +15,7 @@ def create_app(debug=False):
 
 
 app = create_app()
+cors = CORS(app)
 
 
 def connect_pg_db():
