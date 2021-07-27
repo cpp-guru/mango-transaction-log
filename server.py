@@ -19,6 +19,12 @@ app = create_app()
 cors = CORS(app)
 
 
+def cached_jsonify(data, seconds=60):
+    response = jsonify(data)
+    response.headers['Cache-Control'] = f'public, max-age={seconds}'
+
+    return response
+
 # TODO: refactor - remove duplicated functions
 def connect_transactions_db():
     """Connects to the specific database."""
@@ -265,6 +271,51 @@ def liquidations(margin_account):
     except Exception as e:
         print(e)
 
+
+@app.route('/stats/all_liquidations')
+def all_liquidations():
+    try:
+        db = get_transactions_db()
+        cur = db.cursor()
+
+        limit = request.args.get('limit')
+        offset = request.args.get('offset')
+        if limit is None:
+            limit = 10_000  # default limit
+            offset = 0
+        else:
+            if offset is None:
+                offset = 0
+
+        sql = """
+        select array_to_json(array_agg(row_to_json(out))) from 
+        (
+            select l.*,
+                (
+                select array_to_json(array_agg(row_to_json(lh)))
+                from (
+                    select symbol, start_assets, start_liabs, end_assets, end_liabs, price 
+                    from liquidation_holdings 
+                    where signature = l.signature 
+                ) lh
+                ) as balances
+            from liquidations l 
+            order by l.block_datetime desc
+            limit %(limit)s offset %(offset)s
+        ) out
+        """
+
+        cur.execute(sql, {'limit': limit, 'offset': offset})
+        data = cur.fetchone()[0]
+
+        if data is None:
+            return jsonify([])
+        else:
+            return jsonify(data)
+
+    except Exception as e:
+        print(e)
+
 @app.route('/stats/prices/<mango_group>')
 def prices(mango_group):
     try:
@@ -378,9 +429,9 @@ def pnl_leaderboard():
         data = cur.fetchone()[0]
 
         if data is None:
-            return jsonify({})
+            return cached_jsonify({})
         else:
-            return jsonify(data)
+            return cached_jsonify(data)
 
     except Exception as e:
         print(e)
@@ -422,9 +473,9 @@ def pnl_leaderboard_rank(margin_account):
         data = cur.fetchone()
 
         if data is None:
-            return jsonify({})
+            return cached_jsonify({})
         else:
-            return jsonify(data[0])
+            return cached_jsonify(data[0])
 
     except Exception as e:
         print(e)
@@ -494,7 +545,7 @@ def pnl_history(margin_account):
                         })
                         dt_iter -= delta
 
-            return jsonify(data)
+            return cached_jsonify(data)
 
     except Exception as e:
         print(e)
